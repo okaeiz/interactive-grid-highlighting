@@ -1,8 +1,8 @@
-# Grid Component Project
+# Interactive Grid Highlighting Project
 
 ## Overview
 
-This project implements a grid-based React component that displays data fetched from a JSON file. The grid features interactive row and column headers with highlight functionality.
+This project implements a grid-based React component that displays data fetched from a JSON file hosted on [Mocky](https://designer.mocky.io/). The grid features interactive row and column headers with highlight functionality.
 
 ## Features
 
@@ -23,7 +23,7 @@ This project implements a grid-based React component that displays data fetched 
 
 1. Clone the repository
 2. Install dependencies: `npm install`
-3. Start the development server: `npm start`
+3. Start the development server: `npm start` or `npx vite`
 
 ## Usage
 
