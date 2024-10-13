@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -8,6 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import "tailwindcss/tailwind.css";
+import { cn } from "@/lib/utils";
 
 interface GridData {
   columns: string[];
@@ -24,7 +25,7 @@ const Grid: React.FC = () => {
     const fetchData = async () => {
       try {
         const response = await fetch(
-          "https://run.mocky.io/v3/b31cac6c-7d96-49ee-9080-4060ef3ec530"
+          "https://run.mocky.io/v3/e2089162-08d7-4e9e-ac49-da1d749902fc"
         );
         const data = await response.json();
         setGridData(data);
@@ -37,8 +38,7 @@ const Grid: React.FC = () => {
   }, []);
 
   const getCellColor = (value: number | null) => {
-    if (value === null) return "bg-white";
-    if (value === 0) return "bg-white";
+    if (value === null || value === 0) return "bg-white";
 
     if (value > 0) {
       if (value <= 2) return "bg-green-100";
@@ -58,23 +58,25 @@ const Grid: React.FC = () => {
     return "bg-white";
   };
 
-  const calculateAverage = (data: (number | null)[][]) => {
-    const averages = [];
-    for (let colIndex = 0; colIndex < data[0].length; colIndex++) {
-      const validValues = data
+  const averages = useMemo(() => {
+    if (!gridData) return [];
+    const avgValues = [];
+    for (let colIndex = 0; colIndex < gridData.data[0].length; colIndex++) {
+      const validValues = gridData.data
         .map((row) => row[colIndex])
         .filter((value) => value !== null) as number[];
       const avg =
         validValues.reduce((acc, curr) => acc + curr, 0) / validValues.length;
-      averages.push(avg);
+      avgValues.push(avg);
     }
-    return averages;
-  };
+    return avgValues;
+  }, [gridData]);
 
-  const calculateStandardDeviation = (data: (number | null)[][]) => {
-    const stdDeviations = [];
-    for (let colIndex = 0; colIndex < data[0].length; colIndex++) {
-      const validValues = data
+  const stdDeviations = useMemo(() => {
+    if (!gridData) return [];
+    const stdDevValues = [];
+    for (let colIndex = 0; colIndex < gridData.data[0].length; colIndex++) {
+      const validValues = gridData.data
         .map((row) => row[colIndex])
         .filter((value) => value !== null) as number[];
       const avg =
@@ -83,48 +85,68 @@ const Grid: React.FC = () => {
         validValues.reduce((acc, curr) => acc + (curr - avg) ** 2, 0) /
         validValues.length;
       const stdDev = Math.sqrt(variance);
-      stdDeviations.push(stdDev);
+      stdDevValues.push(stdDev);
     }
-    return stdDeviations;
-  };
+    return stdDevValues;
+  }, [gridData]);
+
+  const handleMouseEnterColumn = useCallback((index: number) => {
+    setHoveredColumn(index);
+    setHoveredRow(null);
+  }, []);
+
+  const handleMouseLeaveColumn = useCallback(() => {
+    setHoveredColumn(null);
+  }, []);
+
+  const handleMouseEnterRow = useCallback((index: number) => {
+    setHoveredRow(index);
+    setHoveredColumn(null);
+  }, []);
+
+  const handleMouseLeaveRow = useCallback(() => {
+    setHoveredRow(null);
+  }, []);
 
   if (!gridData) {
     return <div>Loading...</div>;
   }
 
-  const averages = calculateAverage(gridData.data);
-  const stdDeviations = calculateStandardDeviation(gridData.data);
-
   return (
     <div
-      className="w-full max-w-6xl p-6 bg-white rounded-lg shadow-md animate-fadeIn"
+      className={cn(
+        "w-full max-w-6xl p-6 bg-white rounded-lg shadow-md animate-fadeIn"
+      )}
       dir="rtl"
       style={{ fontFamily: "Vazirmatn, sans-serif" }}
     >
-      <h3 className="text-center text-lg font-semibold mb-4">جدول داده‌ها</h3>
-      <div className="overflow-x-auto">
+      <h3 className={cn("text-center text-lg font-semibold mb-4")}>
+        جدول داده‌ها
+      </h3>
+
+      <div className={cn("overflow-x-auto")}>
         <Table
-          className="min-w-full border-separate"
+          className={cn("min-w-full border-separate")}
           style={{ borderSpacing: "0.5rem" }}
         >
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[100px] text-center bg-gray-100 rounded-lg">
+              <TableHead
+                className={cn("w-[100px] text-center bg-gray-100 rounded-lg")}
+              >
                 سال
               </TableHead>
               {gridData.columns.map((header, index) => (
                 <TableHead
                   key={index}
-                  className={`bg-gray-100 hover:bg-gray-200 cursor-pointer text-center rounded-lg ${
+                  className={cn(
+                    "bg-gray-100 hover:bg-gray-200 cursor-pointer text-center rounded-lg",
                     hoveredColumn === index
                       ? "bg-gray-200 opacity-100"
                       : "opacity-80"
-                  }`}
-                  onMouseEnter={() => {
-                    setHoveredColumn(index);
-                    setHoveredRow(null);
-                  }}
-                  onMouseLeave={() => setHoveredColumn(null)}
+                  )}
+                  onMouseEnter={() => handleMouseEnterColumn(index)}
+                  onMouseLeave={handleMouseLeaveColumn}
                 >
                   {header}
                 </TableHead>
@@ -136,19 +158,18 @@ const Grid: React.FC = () => {
             {gridData.rows.map((rowHeader, rowIndex) => (
               <TableRow
                 key={rowIndex}
-                className={`${
+                className={cn(
                   hoveredRow === rowIndex
                     ? "bg-gray-200 opacity-100"
                     : "opacity-80"
-                }`}
+                )}
               >
                 <TableCell
-                  className="font-medium hover:bg-gray-100 cursor-pointer text-center p-4 rounded-lg"
-                  onMouseEnter={() => {
-                    setHoveredRow(rowIndex);
-                    setHoveredColumn(null);
-                  }}
-                  onMouseLeave={() => setHoveredRow(null)}
+                  className={cn(
+                    "font-medium hover:bg-gray-100 cursor-pointer text-center p-4 rounded-lg"
+                  )}
+                  onMouseEnter={() => handleMouseEnterRow(rowIndex)}
+                  onMouseLeave={handleMouseLeaveRow}
                 >
                   {rowHeader}
                 </TableCell>
@@ -156,13 +177,13 @@ const Grid: React.FC = () => {
                 {gridData.data[rowIndex].map((cell, cellIndex) => (
                   <TableCell
                     key={cellIndex}
-                    className={`p-4 h-12 border text-center rounded-lg ${getCellColor(
-                      cell
-                    )} ${
+                    className={cn(
+                      "p-4 h-12 border text-center rounded-lg",
+                      getCellColor(cell),
                       hoveredRow === rowIndex || hoveredColumn === cellIndex
                         ? "opacity-100"
                         : "opacity-50"
-                    }`}
+                    )}
                   >
                     {cell !== null ? `${cell}%` : "-"}
                   </TableCell>
@@ -173,40 +194,46 @@ const Grid: React.FC = () => {
         </Table>
       </div>
 
-      <hr className="my-6 border-gray-300" />
+      <hr className={cn("my-6 border-gray-300")} />
 
-      <div className="overflow-x-auto">
+      <div className={cn("overflow-x-auto")}>
         <Table
-          className="min-w-full border-separate"
+          className={cn("min-w-full border-separate")}
           style={{ borderSpacing: "0.5rem" }}
         >
           <TableBody>
-            <TableRow className="bg-gray-100">
-              <TableCell className="font-medium text-center p-4 rounded-lg">
+            <TableRow className={cn("bg-gray-100")}>
+              <TableCell
+                className={cn("font-medium text-center p-4 rounded-lg")}
+              >
                 میانگین
               </TableCell>
               {averages.map((value, index) => (
                 <TableCell
                   key={index}
-                  className={`text-center p-4 rounded-lg ${getCellColor(
-                    value
-                  )}`}
+                  className={cn(
+                    "text-center p-4 rounded-lg",
+                    getCellColor(value)
+                  )}
                 >
                   {value !== null ? `${value.toFixed(2)}` : ""}
                 </TableCell>
               ))}
             </TableRow>
 
-            <TableRow className="bg-gray-50">
-              <TableCell className="font-medium text-center p-4 rounded-lg">
+            <TableRow className={cn("bg-gray-50")}>
+              <TableCell
+                className={cn("font-medium text-center p-4 rounded-lg")}
+              >
                 انحراف معیار
               </TableCell>
               {stdDeviations.map((value, index) => (
                 <TableCell
                   key={index}
-                  className={`text-center p-4 rounded-lg ${getCellColor(
-                    value
-                  )}`}
+                  className={cn(
+                    "text-center p-4 rounded-lg",
+                    getCellColor(value)
+                  )}
                 >
                   {value !== null ? `${value.toFixed(2)}` : ""}
                 </TableCell>
