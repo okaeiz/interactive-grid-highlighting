@@ -148,14 +148,7 @@ const Grid: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead
-                  className={cn(
-                    "text-center bg-gray-100 rounded-lg p-4",
-                    isHighlighted
-                      ? hoveredRow !== null
-                        ? "bg-white"
-                        : "hover:bg-blue-300"
-                      : "opacity-70"
-                  )}
+                  className={cn("text-center bg-gray-100 rounded-lg p-4")}
                   style={{ width: "10%" }}
                 >
                   سال
@@ -165,11 +158,7 @@ const Grid: React.FC = () => {
                     key={index}
                     className={cn(
                       "bg-gray-100 cursor-pointer text-center rounded-lg p-4",
-                      isHighlighted
-                        ? hoveredColumn === index
-                          ? "bg-blue-300"
-                          : "bg-white"
-                        : "opacity-70"
+                      hoveredColumn === index ? "bg-blue-300" : ""
                     )}
                     style={{ width: `${90 / gridData.columns.length}%` }}
                     onMouseEnter={() => handleMouseEnterColumn(index)}
@@ -197,7 +186,7 @@ const Grid: React.FC = () => {
                 >
                   <TableCell
                     className={cn(
-                      "font-medium cursor-pointer text-center p-4 rounded-lg",
+                      "font-medium cursor-pointer text-center p-4 rounded-lg bg-gray-100",
                       hoveredRow === rowIndex
                         ? "bg-blue-300"
                         : hoveredColumn === null && hoveredRow === null
