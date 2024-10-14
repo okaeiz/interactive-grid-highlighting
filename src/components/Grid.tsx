@@ -37,7 +37,7 @@ const Grid: React.FC = () => {
     fetchData();
   }, []);
 
-  const getCellColor = (value: number | null) => {
+  const getCellColor = useCallback((value: number | null) => {
     if (value === null || value === 0) return "bg-white";
 
     if (value > 0) {
@@ -56,7 +56,7 @@ const Grid: React.FC = () => {
       return "bg-red-500";
     }
     return "bg-white";
-  };
+  }, []);
 
   const averages = useMemo(() => {
     if (!gridData) return [];
@@ -67,7 +67,7 @@ const Grid: React.FC = () => {
         .filter((value) => value !== null) as number[];
       const avg =
         validValues.reduce((acc, curr) => acc + curr, 0) / validValues.length;
-      avgValues.push(avg);
+      avgValues.push(parseFloat(avg.toFixed(2)));
     }
     return avgValues;
   }, [gridData]);
@@ -85,7 +85,7 @@ const Grid: React.FC = () => {
         validValues.reduce((acc, curr) => acc + (curr - avg) ** 2, 0) /
         validValues.length;
       const stdDev = Math.sqrt(variance);
-      stdDevValues.push(stdDev);
+      stdDevValues.push(parseFloat(stdDev.toFixed(2)));
     }
     return stdDevValues;
   }, [gridData]);
@@ -108,139 +108,205 @@ const Grid: React.FC = () => {
     setHoveredRow(null);
   }, []);
 
+  const convertToFarsiDigits = (number: number): string => {
+    return number
+      .toString()
+      .replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[parseInt(d, 10)]);
+  };
+
+  const formatPercentage = (value: number): string => {
+    const formattedValue = convertToFarsiDigits(Math.abs(value));
+    return value < 0 ? `%${formattedValue}-` : `%${formattedValue}`;
+  };
+
   if (!gridData) {
-    return <div>Loading...</div>;
+    return (
+      <div dir="rtl" style={{ fontFamily: "Vazirmatn, sans-serif" }}>
+        چند لحظه صبر کنید...
+      </div>
+    );
   }
 
+  const isHighlighted = hoveredRow !== null || hoveredColumn !== null;
+
   return (
-    <div
-      className={cn(
-        "w-full max-w-6xl p-6 bg-white rounded-lg shadow-md animate-fadeIn"
-      )}
-      dir="rtl"
-      style={{ fontFamily: "Vazirmatn, sans-serif" }}
-    >
-      <h3 className={cn("text-center text-lg font-semibold mb-4")}>
-        جدول داده‌ها
-      </h3>
-
-      <div className={cn("overflow-x-auto")}>
-        <Table
-          className={cn("min-w-full border-separate")}
-          style={{ borderSpacing: "0.5rem" }}
-        >
-          <TableHeader>
-            <TableRow>
-              <TableHead
-                className={cn("w-[100px] text-center bg-gray-100 rounded-lg")}
-              >
-                سال
-              </TableHead>
-              {gridData.columns.map((header, index) => (
+    <div dir="rtl" style={{ fontFamily: "Vazirmatn, sans-serif" }}>
+      <div
+        className={cn(
+          "w-full max-w-6xl p-6 bg-white rounded-lg shadow-md animate-fadeIn"
+        )}
+      >
+        <div className={cn("overflow-x-hidden mb-6")}>
+          <Table
+            className={cn("w-full")}
+            style={{
+              borderCollapse: "separate",
+              borderSpacing: "0.5rem",
+              tableLayout: "fixed",
+            }}
+          >
+            <TableHeader>
+              <TableRow>
                 <TableHead
-                  key={index}
                   className={cn(
-                    "bg-gray-100 hover:bg-gray-200 cursor-pointer text-center rounded-lg",
-                    hoveredColumn === index
-                      ? "bg-gray-200 opacity-100"
-                      : "opacity-80"
+                    "text-center bg-gray-100 rounded-lg p-4",
+                    isHighlighted
+                      ? hoveredRow !== null
+                        ? "bg-white"
+                        : "hover:bg-blue-300"
+                      : "opacity-70"
                   )}
-                  onMouseEnter={() => handleMouseEnterColumn(index)}
-                  onMouseLeave={handleMouseLeaveColumn}
+                  style={{ width: "10%" }}
                 >
-                  {header}
+                  سال
                 </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {gridData.rows.map((rowHeader, rowIndex) => (
-              <TableRow
-                key={rowIndex}
-                className={cn(
-                  hoveredRow === rowIndex
-                    ? "bg-gray-200 opacity-100"
-                    : "opacity-80"
-                )}
-              >
-                <TableCell
-                  className={cn(
-                    "font-medium hover:bg-gray-100 cursor-pointer text-center p-4 rounded-lg"
-                  )}
-                  onMouseEnter={() => handleMouseEnterRow(rowIndex)}
-                  onMouseLeave={handleMouseLeaveRow}
-                >
-                  {rowHeader}
-                </TableCell>
-
-                {gridData.data[rowIndex].map((cell, cellIndex) => (
-                  <TableCell
-                    key={cellIndex}
+                {gridData.columns.map((header, index) => (
+                  <TableHead
+                    key={index}
                     className={cn(
-                      "p-4 h-12 border text-center rounded-lg",
-                      getCellColor(cell),
-                      hoveredRow === rowIndex || hoveredColumn === cellIndex
-                        ? "opacity-100"
-                        : "opacity-50"
+                      "bg-gray-100 cursor-pointer text-center rounded-lg p-4",
+                      isHighlighted
+                        ? hoveredColumn === index
+                          ? "bg-blue-300"
+                          : "bg-white"
+                        : "opacity-70"
                     )}
+                    style={{ width: `${90 / gridData.columns.length}%` }}
+                    onMouseEnter={() => handleMouseEnterColumn(index)}
+                    onMouseLeave={handleMouseLeaveColumn}
                   >
-                    {cell !== null ? `${cell}%` : "-"}
+                    {header}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+
+            <div className="mb-4"></div>
+
+            <TableBody>
+              {gridData.rows.map((rowHeader, rowIndex) => (
+                <TableRow
+                  key={rowIndex}
+                  className={cn(
+                    hoveredRow === rowIndex
+                      ? "bg-blue-200"
+                      : hoveredColumn !== null
+                      ? "bg-white"
+                      : "opacity-70"
+                  )}
+                >
+                  <TableCell
+                    className={cn(
+                      "font-medium cursor-pointer text-center p-4 rounded-lg",
+                      hoveredRow === rowIndex
+                        ? "bg-blue-300"
+                        : hoveredColumn === null && hoveredRow === null
+                        ? "hover:bg-blue-200"
+                        : ""
+                    )}
+                    style={{ width: "10%" }}
+                    onMouseEnter={() => handleMouseEnterRow(rowIndex)}
+                    onMouseLeave={handleMouseLeaveRow}
+                  >
+                    {convertToFarsiDigits(parseInt(rowHeader))}
+                  </TableCell>
+                  {gridData.data[rowIndex].map((cell, cellIndex) => (
+                    <TableCell
+                      key={cellIndex}
+                      className={cn(
+                        "text-center p-4 rounded-lg",
+                        getCellColor(cell),
+                        hoveredRow === rowIndex || hoveredColumn === cellIndex
+                          ? "opacity-100"
+                          : isHighlighted
+                          ? "bg-white"
+                          : "opacity-70"
+                      )}
+                      style={{ width: `${90 / gridData.columns.length}%` }}
+                    >
+                      {cell !== null ? (
+                        <span dir="rtl" style={{ display: "inline-block" }}>
+                          {formatPercentage(cell)}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <hr className="my-6 border-gray-300" />
+
+        <div className={cn("overflow-x-hidden mt-4")}>
+          <Table
+            className={cn("w-full")}
+            style={{
+              borderCollapse: "separate",
+              borderSpacing: "0.5rem",
+              tableLayout: "fixed",
+            }}
+          >
+            <TableBody>
+              <TableRow className={cn("bg-gray-100 mb-4")}>
+                <TableCell
+                  className={cn("font-medium text-center p-4 rounded-lg")}
+                  style={{ width: "10%" }}
+                >
+                  میانگین
+                </TableCell>
+                {averages.map((value, index) => (
+                  <TableCell
+                    key={index}
+                    className={cn(
+                      "text-center p-4 rounded-lg",
+                      getCellColor(value)
+                    )}
+                    style={{ width: `${90 / gridData.columns.length}%` }}
+                  >
+                    {value !== null ? (
+                      <span dir="rtl" style={{ display: "inline-block" }}>
+                        {formatPercentage(value)}
+                      </span>
+                    ) : (
+                      ""
+                    )}
                   </TableCell>
                 ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      <hr className={cn("my-6 border-gray-300")} />
-
-      <div className={cn("overflow-x-auto")}>
-        <Table
-          className={cn("min-w-full border-separate")}
-          style={{ borderSpacing: "0.5rem" }}
-        >
-          <TableBody>
-            <TableRow className={cn("bg-gray-100")}>
-              <TableCell
-                className={cn("font-medium text-center p-4 rounded-lg")}
-              >
-                میانگین
-              </TableCell>
-              {averages.map((value, index) => (
+              <TableRow className={cn("h-4")}></TableRow>
+              <TableRow className={cn("bg-gray-50 mt-4")}>
                 <TableCell
-                  key={index}
-                  className={cn(
-                    "text-center p-4 rounded-lg",
-                    getCellColor(value)
-                  )}
+                  className={cn("font-medium text-center p-4 rounded-lg")}
+                  style={{ width: "10%" }}
                 >
-                  {value !== null ? `${value.toFixed(2)}` : ""}
+                  انحراف معیار
                 </TableCell>
-              ))}
-            </TableRow>
-
-            <TableRow className={cn("bg-gray-50")}>
-              <TableCell
-                className={cn("font-medium text-center p-4 rounded-lg")}
-              >
-                انحراف معیار
-              </TableCell>
-              {stdDeviations.map((value, index) => (
-                <TableCell
-                  key={index}
-                  className={cn(
-                    "text-center p-4 rounded-lg",
-                    getCellColor(value)
-                  )}
-                >
-                  {value !== null ? `${value.toFixed(2)}` : ""}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableBody>
-        </Table>
+                {stdDeviations.map((value, index) => (
+                  <TableCell
+                    key={index}
+                    className={cn(
+                      "text-center p-4 rounded-lg",
+                      getCellColor(value)
+                    )}
+                    style={{ width: `${90 / gridData.columns.length}%` }}
+                  >
+                    {value !== null ? (
+                      <span dir="rtl" style={{ display: "inline-block" }}>
+                        {formatPercentage(value)}
+                      </span>
+                    ) : (
+                      ""
+                    )}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );
