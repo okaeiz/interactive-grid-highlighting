@@ -20,6 +20,10 @@ const Grid: React.FC = () => {
   const [gridData, setGridData] = useState<GridData | null>(null);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [hoveredColumn, setHoveredColumn] = useState<number | null>(null);
+  const [hoveredRowHeader, setHoveredRowHeader] = useState<number | null>(null);
+  const [hoveredColumnHeader, setHoveredColumnHeader] = useState<number | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,6 +60,19 @@ const Grid: React.FC = () => {
       return "bg-red-500";
     }
     return "bg-white";
+  }, []);
+
+  const handleMouseEnterCell = useCallback(
+    (rowIndex: number, colIndex: number) => {
+      setHoveredRowHeader(rowIndex);
+      setHoveredColumnHeader(colIndex);
+    },
+    []
+  );
+
+  const handleMouseLeaveCell = useCallback(() => {
+    setHoveredRowHeader(null);
+    setHoveredColumnHeader(null);
   }, []);
 
   const averages = useMemo(() => {
@@ -170,8 +187,6 @@ const Grid: React.FC = () => {
               </TableRow>
             </TableHeader>
 
-            <div className="mb-4"></div>
-
             <TableBody>
               {gridData.rows.map((rowHeader, rowIndex) => (
                 <TableRow
@@ -212,6 +227,10 @@ const Grid: React.FC = () => {
                           : "opacity-70"
                       )}
                       style={{ width: `${90 / gridData.columns.length}%` }}
+                      onMouseEnter={() =>
+                        handleMouseEnterCell(rowIndex, cellIndex)
+                      }
+                      onMouseLeave={handleMouseLeaveCell}
                     >
                       {cell !== null ? (
                         <span dir="rtl" style={{ display: "inline-block" }}>
@@ -277,10 +296,7 @@ const Grid: React.FC = () => {
                 {stdDeviations.map((value, index) => (
                   <TableCell
                     key={index}
-                    className={cn(
-                      "text-center p-4 rounded-lg",
-                      getCellColor(value)
-                    )}
+                    className={cn("text-center p-4 rounded-lg bg-gray-200")}
                     style={{ width: `${90 / gridData.columns.length}%` }}
                   >
                     {value !== null ? (
