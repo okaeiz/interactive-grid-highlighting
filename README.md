@@ -14,7 +14,7 @@ This project implements a grid-based React component that displays data fetched 
 
 ## Technologies Used
 
-- React
+- React (Vite)
 - TypeScript
 - Shadcn UI (for Table component)
 - TailwindCSS (for styling)
